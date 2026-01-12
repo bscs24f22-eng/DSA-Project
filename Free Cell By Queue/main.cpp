@@ -1,118 +1,126 @@
-#include <iostream>
-#include <cstdlib>
-#include <ctime>
-#include <string>
+#ifndef TEAMMATE1_DS_H
+#define TEAMMATE1_DS_H
 
+#include <iostream>
+#include <limits>
 using namespace std;
 
-struct card {
-    int rank;
-    int suit;
-
-    card() : rank(0), suit(0) {}
-    card(int r, int s) : rank(r), suit(s) {}
-};
-
-template <class t>
-class que {
+/* ================= NODE ================= */
+template <typename T>
+class Node
+{
 public:
-    int size, frnt, rare;
-    t* ptr;
+    T data;
+    Node* next;
+    Node(T val) : data(val), next(nullptr) {}
+};
 
-    que(int a) {
-        ptr = new t[a];
-        size = a;
-        frnt = 0;
-        rare = 0;
+/* ================= QUEUE ================= */
+template <typename T>
+class Queue
+{
+private:
+    Node<T>* frontNode;
+    Node<T>* rearNode;
+    int count;
+
+public:
+    Queue() : frontNode(nullptr), rearNode(nullptr), count(0) {}
+
+    ~Queue()
+    {
+        while (!isEmpty())
+            dequeue();
     }
 
-    ~que() {
-        delete[] ptr;
+    void enqueue(T val)
+    {
+        Node<T>* newNode = new Node<T>(val);
+        if (isEmpty())
+            frontNode = rearNode = newNode;
+        else
+        {
+            rearNode->next = newNode;
+            rearNode = newNode;
+        }
+        count++;
     }
 
-    bool isempty() { return frnt == rare; }
-    bool isfull() { return frnt == size; }
+    T dequeue()
+    {
+        if (isEmpty())
+        {
+            cout << "Queue is empty!" << endl;
+            return T();
+        }
 
-    void enqu(t m) {
-        if (!isfull()) ptr[frnt++] = m;
+        Node<T>* temp = frontNode;
+        T val = temp->data;
+        frontNode = frontNode->next;
+
+        if (!frontNode)
+            rearNode = nullptr;
+
+        delete temp;
+        count--;
+        return val;
     }
 
-    void dequ() {
-        if (!isempty()) rare++;
+    T front() const
+    {
+        if (isEmpty())
+            return T();
+        return frontNode->data;
     }
 
-    int get_size() { return frnt - rare; }
-
-    t get_top() {
-        if (!isempty()) return ptr[frnt - 1];
-        return t();
+    bool isEmpty() const
+    {
+        return frontNode == nullptr;
     }
 
-    void remove_top() {
-        if (!isempty()) frnt--;
-    }
-
-    t get_at_index(int idx) {
-        if (idx >= rare && idx < frnt) return ptr[idx];
-        return t();
-    }
-
-    void clear() {
-        frnt = rare = 0;
+    int size() const
+    {
+        return count;
     }
 };
 
-struct game_state {
-    que<card>* tableau[8];
-    que<card>* free_cells[4];
-    que<card>* foundations[4];
-    int score;
+/* ================= CARD ================= */
+struct Card
+{
+    char rank;
+    char suit;
 
-    game_state() {
-        for (int i = 0; i < 8; i++)
-            tableau[i] = new que<card>(52);
+    Card() : rank('0'), suit('0') {}
+    Card(char r, char s) : rank(r), suit(s) {}
 
-        for (int i = 0; i < 4; i++) {
-            free_cells[i] = new que<card>(13);
-            foundations[i] = new que<card>(13);
-        }
-        score = 0;
+    bool isEmpty() const
+    {
+        return rank == '0';
     }
 
-    ~game_state() {
-        for (int i = 0; i < 8; i++) delete tableau[i];
-        for (int i = 0; i < 4; i++) {
-            delete free_cells[i];
-            delete foundations[i];
-        }
+    int getRankValue() const
+    {
+        if (rank == 'A') return 1;
+        if (rank >= '2' && rank <= '9') return rank - '0';
+        if (rank == 'T') return 10;
+        if (rank == 'J') return 11;
+        if (rank == 'Q') return 12;
+        if (rank == 'K') return 13;
+        return 0;
+    }
+
+    bool isRed() const
+    {
+        return suit == 'H' || suit == 'D';
+    }
+
+    void display() const
+    {
+        if (isEmpty())
+            cout << "[  ]";
+        else
+            cout << "[" << rank << suit << "]";
     }
 };
 
-game_state* game;
-void shuffle_deck(card deck[], int deck_size) {
-    srand(time(0));
-    for (int i = deck_size - 1; i > 0; i--) {
-        int j = rand() % (i + 1);
-        swap(deck[i], deck[j]);
-    }
-}
-
-int get_card_color(const card& c) {
-    return (c.suit == 0 || c.suit == 1) ? 0 : 1;
-}
-
-bool can_place_on_tableau(card c, int col) {
-    if (game->tableau[col]->isempty()) return true;
-
-    card top = game->tableau[col]->get_top();
-    return get_card_color(c) != get_card_color(top) &&
-           c.rank == top.rank - 1;
-}
-
-bool can_place_on_foundation(card c, int idx) {
-    if (game->foundations[idx]->isempty())
-        return c.rank == 1;
-
-    card top = game->foundations[idx]->get_top();
-    return c.suit == top.suit && c.rank == top.rank + 1;
-}
+#endif
