@@ -1,104 +1,81 @@
-#pragma once
-#include "Linklist.h"
+#ifndef FOUNDATION_H
+#define FOUNDATION_H
+
+#include <fstream>
 #include "Card.h"
+#include "Stack.h"   // Your template Stack<T> class
+#include "raylib.h"
 
-class Column {
-private:
-    LinkedList<Card> cards;
-
+// Foundation Pile Class
+class Foundation {
 public:
-    Column() {}
+    Stack<Card> cards;
+    int suit;   // Suit of the foundation (-1 when empty)
 
-    void addCard(Card c) {
-        cards.insertAtTail(c);
-    }
-
-    int size() const {
-        return cards.size();
-    }
+    Foundation() : cards(52), suit(-1) {}
 
     bool isEmpty() const {
         return cards.isEmpty();
     }
 
-    Card getTopCard() {
-        return cards.getTail();
+    int size() const {
+        return cards.getSize();
     }
 
-    void flipTopCard() {
-        if (!isEmpty()) {
-            Node<Card>* topNode = cards.getNodeAt(cards.size() - 1);
-            if (topNode) {
-                topNode->data.flip();
-            }
-        }
+    Card getTopCard() const {
+        return cards.peek();
     }
 
-    bool canPlaceCards(int startIdx) {
-        if (startIdx < 0 || startIdx >= cards.size()) return false;
+    bool canAddCard(const Card& c) {
+        if (isEmpty())
+            return c.getRank() == 1;   // Ace starts foundation
 
-        for (int i = startIdx; i < cards.size() - 1; i++) {
-            Node<Card>* curr = cards.getNodeAt(i);
-            Node<Card>* next = cards.getNodeAt(i + 1);
-            
-            if (!curr || !next) return false;
-            if (!curr->data.isFaceUp()) return false;
-            if (!next->data.canPlaceOn(curr->data)) return false;
-        }
-        
-        Node<Card>* last = cards.getNodeAt(cards.size() - 1);
-        if (!last || !last->data.isFaceUp()) return false;
-        
-        return true;
+        Card top = getTopCard();
+        return c.canPlaceOnFoundation(top);
     }
 
-    bool checkCompleteSequence() {
-        if (cards.size() < 13) return false;
-
-        int idx = cards.size() - 13;
-        Node<Card>* node = cards.getNodeAt(idx);
-        
-        if (!node || !node->data.isFaceUp() || node->data.getRank() != 13)
-            return false;
-
-        for (int i = 0; i < 12; i++) {
-            Node<Card>* curr = cards.getNodeAt(idx + i);
-            Node<Card>* next = cards.getNodeAt(idx + i + 1);
-            
-            if (!curr || !next) return false;
-            if (!next->data.canPlaceOn(curr->data)) return false;
-        }
-
-        cards.removeRange(idx, cards.size() - 1);
-        flipTopCard();
-        return true;
+    void addCard(const Card& c) {
+        if (isEmpty())
+            suit = c.getSuit();
+        cards.push(c);
     }
 
-    LinkedList<Card> removeCards(int startIdx) {
-        return cards.extractRange(startIdx, cards.size() - 1);
-    }
+    void draw(int x, int y,
+              Texture2D* cardImages,
+              Texture2D cardBack) const
+    {
+        Rectangle r = {(float)x, (float)y, 70, 90};
 
-    void removeCardsRange(int startIdx) {
-        cards.removeRange(startIdx, cards.size() - 1);
-    }
-
-    void addCards(LinkedList<Card>& cardList) {
-        cards.appendList(cardList);
-    }
-
-    void display(int colNum) const {
-        cout << "Col " << colNum << ": ";
-        
-        if (cards.isEmpty()) {
-            cout << "[Empty]";
+        if (isEmpty()) {
+            DrawRectangleRec(r, Color{25, 40, 25, 255});
+            DrawRectangleLinesEx(r, 2, Color{50, 80, 50, 255});
+            DrawText("A", x + 28, y + 35, 24, Color{80, 120, 80, 255});
         } else {
-            for (int i = 0; i < cards.size(); i++) {
-                Node<Card>* node = cards.getNodeAt(i);
-                if (node) {
-                    cout << node->data.toString() << " ";
-                }
-            }
+            Card top = getTopCard();
+            top.draw(x, y, false, cardImages, cardBack);
         }
-        cout << endl;
+    }
+
+    void save(std::ofstream& f) const {
+        f << cards.getSize() << " ";
+        for (int i = 0; i < cards.getSize(); i++) {
+            Card c = cards.getAt(i);
+            f << c.getRank() << " " << c.getSuit() << " ";
+        }
+    }
+
+    void load(std::ifstream& f) {
+        cards.clear();
+        suit = -1;
+
+        int cnt;
+        f >> cnt;
+        for (int i = 0; i < cnt; i++) {
+            int r, s;
+            f >> r >> s;
+            addCard(Card(r, s));
+        }
     }
 };
+
+#endif
