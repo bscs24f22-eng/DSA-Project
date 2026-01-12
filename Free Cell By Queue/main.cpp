@@ -1,11 +1,8 @@
-#ifndef TEAMMATE1_DS_H
-#define TEAMMATE1_DS_H
 
 #include <iostream>
 #include <limits>
 using namespace std;
 
-/* ================= NODE ================= */
 template <typename T>
 class Node
 {
@@ -15,7 +12,6 @@ public:
     Node(T val) : data(val), next(nullptr) {}
 };
 
-/* ================= QUEUE ================= */
 template <typename T>
 class Queue
 {
@@ -123,4 +119,3 @@ struct Card
     }
 };
 
-#endif
