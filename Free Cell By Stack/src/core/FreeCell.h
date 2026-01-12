@@ -1,173 +1,70 @@
-#pragma once
-#include <iostream>
-using namespace std;
+#ifndef FREECELL_H
+#define FREECELL_H
 
-template <class T>
-class Node {
-public:
-    T data;
-    Node<T>* next;
-    Node<T>* prev;
+#include <fstream>
+#include "Card.h"
+#include "Stack.h"   // Your template Stack<T> class
+#include "raylib.h"
 
-    Node(T d) {
-        data = d;
-        next = nullptr;
-        prev = nullptr;
-    }
-};
-
-template <class T>
-class LinkedList {
+class FreeCell {
 private:
-    Node<T>* head;
-    Node<T>* tail;
-    int count;
+    Card card;
+    bool occupied;
 
 public:
-    LinkedList() {
-        head = tail = nullptr;
-        count = 0;
-    }
+    FreeCell() : occupied(false) {}
 
+    // Check if the free cell is empty
     bool isEmpty() const {
-        return head == nullptr;
+        return !occupied;
     }
 
-    int size() const {
-        return count;
+    // Get the card in the cell
+    Card getCard() const {
+        return card;
     }
 
-    Node<T>* getNodeAt(int index) const {
-        if (index < 0 || index >= count) return nullptr;
-        Node<T>* temp = head;
-        for (int i = 0; i < index; i++)
-            temp = temp->next;
-        return temp;
+    // Place a card into the cell
+    void addCard(const Card& c) {
+        card = c;
+        occupied = true;
     }
 
-    void insertAtBeginning(T value) {
-        Node<T>* newNode = new Node<T>(value);
+    // Remove and return the card from the cell
+    Card removeCard() {
+        Card c = card;
+        occupied = false;
+        return c;
+    }
+
+    // Draw the free cell
+    void draw(int x, int y, Texture2D* cardImages, Texture2D cardBack) const {
+        Rectangle r = {(float)x, (float)y, 70, 90};
+
         if (isEmpty()) {
-            head = tail = newNode;
-        }
-        else {
-            newNode->next = head;
-            head->prev = newNode;
-            head = newNode;
-        }
-        count++;
-    }
-
-    void insertAtTail(T value) {
-        Node<T>* newNode = new Node<T>(value);
-        if (isEmpty()) {
-            head = tail = newNode;
-        }
-        else {
-            tail->next = newNode;
-            newNode->prev = tail;
-            tail = newNode;
-        }
-        count++;
-    }
-
-    void deleteFromBeginning() {
-        if (isEmpty()) return;
-        Node<T>* temp = head;
-
-        if (head == tail) {
-            head = tail = nullptr;
-        }
-        else {
-            head = head->next;
-            head->prev = nullptr;
-        }
-        delete temp;
-        count--;
-    }
-
-    void deleteFromTail() {
-        if (isEmpty()) return;
-        Node<T>* temp = tail;
-
-        if (head == tail) {
-            head = tail = nullptr;
-        }
-        else {
-            tail = tail->prev;
-            tail->next = nullptr;
-        }
-        delete temp;
-        count--;
-    }
-
-    void removeRange(int start, int end) {
-        if (start < 0 || end >= count || start > end) return;
-
-        Node<T>* startNode = getNodeAt(start);
-        Node<T>* endNode = getNodeAt(end);
-
-        if (startNode->prev)
-            startNode->prev->next = endNode->next;
-        else
-            head = endNode->next;
-
-        if (endNode->next)
-            endNode->next->prev = startNode->prev;
-        else
-            tail = startNode->prev;
-
-        Node<T>* curr = startNode;
-        for (int i = start; i <= end; i++) {
-            Node<T>* next = curr->next;
-            delete curr;
-            curr = next;
-            count--;
+            DrawRectangleRec(r, Color{30, 35, 25, 255});
+            DrawRectangleLinesEx(r, 2, Color{60, 70, 50, 255});
+        } else {
+            card.draw(x, y, false, cardImages, cardBack);
         }
     }
 
-    LinkedList<T> extractRange(int start, int end) {
-        LinkedList<T> newList;
-        if (start < 0 || end >= count || start > end) return newList;
-
-        Node<T>* startNode = getNodeAt(start);
-        Node<T>* endNode = getNodeAt(end);
-
-        for (Node<T>* curr = startNode; curr != endNode->next; curr = curr->next)
-            newList.insertAtTail(curr->data);
-
-        return newList;
+    // Save the free cell to file
+    void save(std::ofstream& f) const {
+        f << occupied << " ";
+        if (occupied)
+            f << card.getRank() << " " << card.getSuit() << " ";
     }
 
-    void appendList(const LinkedList<T>& other) {
-        Node<T>* curr = other.head;
-        while (curr != nullptr) {
-            insertAtTail(curr->data);
-            curr = curr->next;
+    // Load the free cell from file
+    void load(std::ifstream& f) {
+        f >> occupied;
+        if (occupied) {
+            int r, s;
+            f >> r >> s;
+            card = Card(r, s);
         }
-    }
-
-    T getFront() const {
-        if (isEmpty()) return T();
-        return head->data;
-    }
-
-    T getTail() const {
-        if (isEmpty()) return T();
-        return tail->data;
-    }
-
-    void printForward() const {
-        Node<T>* temp = head;
-        while (temp != nullptr) {
-            cout << temp->data << " ";
-            temp = temp->next;
-        }
-        cout << endl;
-    }
-
-    ~LinkedList() {
-        while (!isEmpty())
-            deleteFromBeginning();
     }
 };
+
+#endif
