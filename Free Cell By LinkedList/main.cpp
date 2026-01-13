@@ -1,8 +1,4 @@
-#include <iostream>
-#include <cstdlib>
-#include <string>
 
-using namespace std;
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
